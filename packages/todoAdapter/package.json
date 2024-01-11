@@ -1,0 +1,24 @@
+{
+  "name": "@lamsaltodo/todo-adapter",
+  "version": "1.0.0",
+  "description": "",
+  "exports": {
+    ".": "./src/createTodoAdapter.js",
+    "./Todo": "./src/types/Todo.js"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase": "^10.7.1",
+    "nanoid": "^5.0.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
