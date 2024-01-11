@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - apps/web/**/*
+      - packages/**/*
   workflow_dispatch:
 
 defaults:
