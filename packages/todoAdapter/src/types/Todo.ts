@@ -1,13 +1,14 @@
-import { z } from "zod"
+import { object, string, date, boolean } from "zod"
+import type { z } from "zod"
 import { nanoid } from "nanoid"
 
-export const TodoSchema = z.object({
-    id: z.string(),
-    value: z.string(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
-    done: z.boolean(),
-    dueDate: z.date().optional(),
+export const TodoSchema = object({
+    id: string(),
+    value: string(),
+    createdAt: date(),
+    updatedAt: date(),
+    done: boolean(),
+    dueDate: date().optional(),
 })
 
 export type Todo = z.infer<typeof TodoSchema>

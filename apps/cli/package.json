@@ -2,10 +2,10 @@
   "name": "cli",
   "version": "1.0.0",
   "description": "",
-  "scripts": {
-    "dev": "esbuild --platform=node --bundle src/index.ts --watch=forever --format=esm --outfile=dist.mjs"
-  },
   "type": "module",
+  "scripts": {
+    "dev": "esbuild --platform=node --bundle src/index.ts --watch=forever --target=esnext --format=esm --external:fs --external:inquirer --external:firebase* --outfile=dist.mjs"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

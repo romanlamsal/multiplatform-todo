@@ -1,13 +1,14 @@
 import dotenv from "dotenv"
-import * as fs from "node:fs"
+
 import inquirer from "inquirer"
 import { createTodoAdapter } from "@lamsaltodo/todo-adapter"
 import { signInWithEmailAndPassword } from "firebase/auth"
+import { existsSync, readFileSync, writeFileSync } from "fs"
 
 export const initTodoAdapter = async () => {
     const dotenvPath = new URL(".env.local", import.meta.url)
 
-    if (!fs.existsSync(dotenvPath)) {
+    if (!existsSync(dotenvPath)) {
         const answers = await inquirer.prompt([
             {
                 name: "apiKey",
@@ -21,10 +22,10 @@ export const initTodoAdapter = async () => {
             },
         ])
 
-        fs.writeFileSync(dotenvPath, `API_KEY=${answers.apiKey}\nUSER_PASSWORD=${answers.password}`)
+        writeFileSync(dotenvPath, `API_KEY=${answers.apiKey}\nUSER_PASSWORD=${answers.password}`)
     }
 
-    const envLocal = dotenv.parse(fs.readFileSync(dotenvPath))
+    const envLocal = dotenv.parse(readFileSync(dotenvPath))
 
     const apiKey = envLocal.API_KEY
     const password = envLocal.USER_PASSWORD
