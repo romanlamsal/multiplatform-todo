@@ -1,15 +1,21 @@
 import type { FirebaseApp } from "firebase/app"
-import { getDatabase, onValue, ref, remove, set } from "firebase/database"
+import { getDatabase, onValue, ref, remove, set, runTransaction } from "firebase/database"
 import type { z } from "zod"
 import type { Todo } from "./types/Todo.js"
 import { NewTodoSchema, TodoSchema } from "./types/Todo.js"
 import type { SafeParseError } from "zod"
+import { string } from "zod"
 
-const TodoApiSerialize = TodoSchema.transform(todo => ({
+const TodoApiSerialize = TodoSchema.extend({
+    createdAt: TodoSchema.shape.createdAt.or(string().datetime()),
+    updatedAt: TodoSchema.shape.updatedAt.or(string().datetime()),
+}).transform(todo => ({
     ...todo,
-    createdAt: todo.createdAt.toISOString(),
-    updatedAt: todo.updatedAt.toISOString(),
+    createdAt: typeof todo.createdAt !== "string" ? todo.createdAt.toISOString() : todo.createdAt,
+    updatedAt: typeof todo.updatedAt !== "string" ? todo.updatedAt.toISOString() : todo.updatedAt,
 }))
+
+const serializeTodo = (input: z.input<typeof TodoApiSerialize>) => TodoApiSerialize.parse(input)
 
 export const createTodoApi = (app: FirebaseApp, onChange: (todos: Todo[]) => void) => {
     const db = getDatabase(app)
@@ -17,10 +23,10 @@ export const createTodoApi = (app: FirebaseApp, onChange: (todos: Todo[]) => voi
     const saveTodo = (todo: string | Todo) => {
         const todoObject = typeof todo === "string" ? NewTodoSchema.parse({ value: todo } satisfies z.input<typeof NewTodoSchema>) : todo
 
-        const parsedTodo = TodoApiSerialize.parse({
+        const parsedTodo = serializeTodo({
             ...todoObject,
             updatedAt: new Date(),
-        } satisfies z.input<typeof TodoApiSerialize>)
+        })
 
         return set(ref(db, "todos/" + parsedTodo.id), parsedTodo)
     }
@@ -30,7 +36,12 @@ export const createTodoApi = (app: FirebaseApp, onChange: (todos: Todo[]) => voi
     }
 
     const toggleDone = (todoId: string, done: boolean) => {
-        return set(ref(db, "todos/" + todoId + "/done"), done)
+        return runTransaction(ref(db, "todos/" + todoId), todo => {
+            todo.done = done
+            todo.updatedAt = new Date()
+
+            return serializeTodo(todo)
+        })
     }
 
     onValue(ref(db, "todos"), snapshot => {

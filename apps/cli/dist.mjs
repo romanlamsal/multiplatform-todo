@@ -354,7 +354,7 @@ var createApp = (apiKey) => {
 };
 
 // ../../packages/todoAdapter/src/createTodoApi.ts
-import { getDatabase, onValue, ref, remove, set } from "firebase/database";
+import { getDatabase, onValue, ref, remove, set, runTransaction } from "firebase/database";
 
 // ../../node_modules/.pnpm/zod@3.22.4/node_modules/zod/lib/index.mjs
 var util;
@@ -3983,16 +3983,20 @@ var NewTodoSchema = TodoSchema.pick({ value: true, dueDate: true }).extend({
 });
 
 // ../../packages/todoAdapter/src/createTodoApi.ts
-var TodoApiSerialize = TodoSchema.transform((todo) => ({
+var TodoApiSerialize = TodoSchema.extend({
+  createdAt: TodoSchema.shape.createdAt.or(stringType().datetime()),
+  updatedAt: TodoSchema.shape.updatedAt.or(stringType().datetime())
+}).transform((todo) => ({
   ...todo,
-  createdAt: todo.createdAt.toISOString(),
-  updatedAt: todo.updatedAt.toISOString()
+  createdAt: typeof todo.createdAt !== "string" ? todo.createdAt.toISOString() : todo.createdAt,
+  updatedAt: typeof todo.updatedAt !== "string" ? todo.updatedAt.toISOString() : todo.updatedAt
 }));
+var serializeTodo = (input) => TodoApiSerialize.parse(input);
 var createTodoApi = (app, onChange) => {
   const db = getDatabase(app);
   const saveTodo = (todo) => {
     const todoObject = typeof todo === "string" ? NewTodoSchema.parse({ value: todo }) : todo;
-    const parsedTodo = TodoApiSerialize.parse({
+    const parsedTodo = serializeTodo({
       ...todoObject,
       updatedAt: /* @__PURE__ */ new Date()
     });
@@ -4002,7 +4006,11 @@ var createTodoApi = (app, onChange) => {
     return remove(ref(db, "todos/" + todoId));
   };
   const toggleDone = (todoId, done) => {
-    return set(ref(db, "todos/" + todoId + "/done"), done);
+    return runTransaction(ref(db, "todos/" + todoId), (todo) => {
+      todo.done = done;
+      todo.updatedAt = /* @__PURE__ */ new Date();
+      return serializeTodo(todo);
+    });
   };
   onValue(ref(db, "todos"), (snapshot) => {
     const snapshotValue = snapshot.val();

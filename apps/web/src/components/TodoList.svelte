@@ -17,7 +17,9 @@
         formElement.reset()
     }
 
-    $: sortedTodos = $todos.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    $: sortedTodos = $todos.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+    $: openTodos = sortedTodos.filter(t => !t.done)
+    $: doneTodos = sortedTodos.filter(t => t.done)
 </script>
 
 <main>
@@ -28,8 +30,14 @@
         </label>
         <button type="submit">Save</button>
     </form>
-    <ul>
-        {#each sortedTodos as todo}
+    <ul class="space-y-1">
+        {#each openTodos as todo (todo.id)}
+            <TodoListItem {todo} />
+        {/each}
+    </ul>
+    <hr class="my-4" />
+    <ul class="space-y-1">
+        {#each doneTodos as todo (todo.id)}
             <TodoListItem {todo} />
         {/each}
     </ul>
